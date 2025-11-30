@@ -41,13 +41,13 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: ./QingLong
+          context: ./test
           push: true
           tags: |
-            ghcr.io/${{ steps.lower-repo.outputs.repository }}/qinglong:latest
+            ghcr.io/${{ steps.lower-repo.outputs.repository }}/test:latest
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
-            org.opencontainers.image.description=QingLong Docker Image
+            org.opencontainers.image.description=test Docker Image
             org.opencontainers.image.licenses=MIT
           cache-from: type=gha
           cache-to: type=gha,mode=max
