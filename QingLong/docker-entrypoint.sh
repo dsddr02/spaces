@@ -1,4 +1,6 @@
 #!/bin/bash
+# 强制使用镜像站和 Google DNS
+echo 'nameserver 8.8.8.8' > /etc/resolv.conf
 
 dir_shell=/ql/shell
 . $dir_shell/share.sh
