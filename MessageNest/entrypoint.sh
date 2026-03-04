@@ -1,37 +1,42 @@
+#!/bin/sh
+
+#开启定时任务
+cron
 
 npm install pm2 -g
 #开启白虎服务
-pm2 start "./baihu server" --name baihu
+pm2 start "/app/Message-Nest" --name message
 
 echo "10秒后开始恢复任务..."
 sleep 10
 
 #从日志中获取密码
 echo  "======================从日志中获取密码========================\n"
-DEFAULT_PASSWORD=$(tail -n 100 ~/.pm2/logs/baihu-out.log \
-    | grep -oP '密\s*码:\s*\K[^,[:space:]]+' \
+DEFAULT_PASSWORD=$(tail -n 100 ~/.pm2/logs/message-out.log \
+    | grep -oP '(?<=密码：)\S+' \
     | tail -n 1)
 
 echo  "默认用户名: admin"
-#echo  "默认密码: $DEFAULT_PASSWORD"
+echo  "默认密码: $DEFAULT_PASSWORD"
 
 echo "============重置密码==============="
 # 获取登陆响应Token
-BHToken=$(
-curl -c cookies.txt -s -D - -o /dev/null \
-  'http://localhost:8052/api/v1/auth/login' \
+MNToken=$(
+curl -c cookies.txt \
+  'http://localhost:8000/auth' \
   -H 'content-type: application/json' \
-  --data-raw "{\"username\":\"admin\",\"password\":\"$DEFAULT_PASSWORD\"}" \
-| awk -F'[=;]' '/Set-Cookie: BHToken=/{print $2}'
+  --data-raw "{\"username\":\"admin\",\"passwd\":\"$DEFAULT_PASSWORD\"}" \
+  | jq -r '.data.token'
 )
-
 sleep 1
 
 RESET_RESPONSE=$(
-  curl -b cookies.txt 'http://localhost:8052/api/v1/settings/password' \
-  -H 'content-type: application/json' \
-  --data-raw "{\"old_password\":\"$DEFAULT_PASSWORD\",\"new_password\":\"$ADMIN_PASSWORD\"}"
+  curl -b cookies.txt "http://localhost:8000/api/v1/settings/setpasswd" \
+  -H "content-type: application/json" \
+  -H "m-token: $MNToken" \
+  --data-raw "{\"old_passwd\":\"$DEFAULT_PASSWORD\",\"new_passwd\":\"$ADMIN_PASSWORD\"}"
 )
+
 
 echo  "======================写入rclone配置========================\n"
 echo "$RCLONE_CONF" > ~/.config/rclone/rclone.conf
@@ -52,18 +57,12 @@ if [ -n "$RCLONE_CONF" ]; then
       echo "初次安装"
     else
       #echo "文件夹不为空"
-      # rclone sync $REMOTE_FOLDER /app --exclude="/baihu" --exclude "/docker-entrypoint.sh"
-      mkdir /app/backup_tmp
+      rclone sync $REMOTE_FOLDER /app/conf 
       # 找最新的文件名
-      latest_file=$(rclone lsjson $REMOTE_FOLDER | jq -r 'sort_by(.ModTime) | last | .Path')
+      # latest_file=$(rclone lsjson $REMOTE_FOLDER | jq -r 'sort_by(.ModTime) | last | .Path')
       # 复制到目标目录
-      rclone copy $REMOTE_FOLDER/$latest_file /app/backup_tmp
-      RESTORE_RESPON=$(curl -b cookies.txt "http://localhost:8052/api/v1/settings/restore" \
-        -F "file=@/app/backup_tmp/$latest_file;type=application/zip" \
-        -H "Accept: */*" \
-        --compressed
-      )
-      rm -rf /app/backup_tmp
+      # rclone copy $REMOTE_FOLDER/$latest_file /app/conf
+      pm2 restart message
     fi
   elif [[ "$OUTPUT" == *"directory not found"* ]]; then
     echo "错误：文件夹不存在"

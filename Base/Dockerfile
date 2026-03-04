@@ -81,7 +81,7 @@ ENV PATH=/npm-global/bin:$PATH
 
 RUN npm config set prefix '/npm-global'
 
-RUN npm install -g pnpm pm2 n8n
+RUN npm install -g pnpm pm2 n8n@1.123.22
 
 RUN mkdir /n8n-data
 RUN chmod -R 777 /var && \
@@ -97,7 +97,7 @@ RUN chmod -R 777 /var && \
 RUN curl -fsSL https://code-server.dev/install.sh | sh -s -- --version=4.23.0-rc.2
 
 # Install ollama
-RUN curl -fsSL https://ollama.com/install.sh | sh
+# RUN curl -fsSL https://ollama.com/install.sh | sh
 
 # Create a user to run code-server
 RUN useradd -m -s /bin/zsh coder && \
