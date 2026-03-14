@@ -12,7 +12,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -27,7 +27,8 @@ jobs:
       - id: lower-repo
         shell: pwsh
         run: |
-          "::set-output name=repository::$($env:GITHUB_REPOSITORY.ToLowerInvariant())"
+          $repo = $env:GITHUB_REPOSITORY.ToLowerInvariant()
+          echo "repository=$repo" >> $env:GITHUB_OUTPUT
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
