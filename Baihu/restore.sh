@@ -1,4 +1,16 @@
 
+# 设置Playwright环境 使用chrome
+# python -m pip install playwright
+# python -m playwright install-deps
+# python -m playwright install chrome
+# 弃用Playwright改用cloakbrowser
+python -m pip install cloakbrowser
+python -m cloakbrowser install
+python -m cloakbrowser info
+python -m playwright install-deps
+# 创建虚拟显示环境 如需调用export DISPLAY=:99
+Xvfb :99 -screen 0 1920x1080x24 &
+
 npm install pm2 -g
 #开启白虎服务
 pm2 start "./baihu server" --name baihu
@@ -38,7 +50,9 @@ echo "$RCLONE_CONF" > ~/.config/rclone/rclone.conf
 
 if [ -n "$RCLONE_CONF" ]; then
   echo "##########同步备份############"
-
+  # 为了防止不存在备份目录报错直接执行创建命令，如果存在也不会受影响
+  rclone mkdir $REMOTE_FOLDER
+  
   # 使用 rclone ls 命令列出文件夹内容，将输出和错误分别捕获
   OUTPUT=$(rclone ls "$REMOTE_FOLDER" 2>&1)
   # 获取 rclone 命令的退出状态码
