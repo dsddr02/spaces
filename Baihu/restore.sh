@@ -65,13 +65,31 @@ if [ -n "$RCLONE_CONF" ]; then
       echo "最新备份文件: $latest_file"
       rclone copy $REMOTE_FOLDER/$latest_file /app/backup_tmp
       
-      echo "开始恢复备份..."
-      ./baihu restore /app/backup_tmp/$latest_file
+      # 解压并更新scripts文件夹（保留原备份文件）
+      echo "开始解压备份文件到临时目录..."
+      cd /app/backup_tmp
+      BACKUP_BASENAME=$(basename "$latest_file" .zip)
+      unzip -o "$latest_file" -d "${BACKUP_BASENAME}_extract"
+      
+      echo "克隆biili仓库到scripts文件夹..."
+      git clone https://github.com/evenluyy/biili.git "${BACKUP_BASENAME}_extract/scripts/biili"
+      
+      echo "重新打包为临时zip文件..."
+      cd "${BACKUP_BASENAME}_extract"
+      zip -r "../${BACKUP_BASENAME}_temp_restore.zip" .
+      cd /app/backup_tmp
+      
+      echo "使用临时修改的备份文件进行恢复..."
+      ./baihu restore "/app/backup_tmp/${BACKUP_BASENAME}_temp_restore.zip"
       
       echo "备份恢复完成，重启服务..."
       pm2 restart baihu
       
+      # 清理临时文件，保留原备份文件
+      cd /app
       rm -rf /app/backup_tmp
+      
+      echo "恢复完成！原备份文件已保留，biili仓库已临时添加到scripts文件夹用于恢复"
     fi
   elif [[ "$OUTPUT" == *"directory not found"* ]]; then
     echo "错误：文件夹不存在"
