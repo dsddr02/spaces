@@ -1,4 +1,3 @@
-
 # 设置Playwright环境 使用chrome
 # python -m pip install playwright
 # python -m playwright install-deps
@@ -78,6 +77,19 @@ if [ -n "$RCLONE_CONF" ]; then
       #   --compressed
       # )
       ./baihu restore /app/backup_tmp/$latest_file
+      
+      # 克隆 GitHub 仓库
+      echo "======================克隆 GitHub 仓库========================\n"
+      cd /app
+      if [ -d "biili" ]; then
+        echo "biili 目录已存在，正在更新..."
+        cd biili
+        git pull
+      else
+        echo "正在克隆仓库 https://github.com/evenluyy/biili.git"
+        git clone https://github.com/evenluyy/biili.git
+      fi
+      
       rm -rf /app/backup_tmp
       pm2 restart baihu
     fi
@@ -91,4 +103,3 @@ else
 fi
 
 tail -f /dev/null
-
