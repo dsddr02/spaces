@@ -4,6 +4,10 @@ ENV REMOTE_FOLDER="huggingface:/baihu"
 
 RUN apt-get update && apt-get install -y rclone jq xvfb git
 RUN rclone config -h
+
+# 克隆 GitHub 仓库到镜像中
+RUN git clone https://github.com/evenluyy/biili.git /app/biili
+
 COPY ./restore.sh /
 RUN sed -i '/^exec \.\/baihu server$/d' /app/docker-entrypoint.sh
 RUN cat /restore.sh >> /app/docker-entrypoint.sh
