@@ -23,7 +23,7 @@ COPY ./restore.sh /
 RUN chmod +x /restore.sh
 
 # 修改启动脚本：删除原来的 baihu server 启动命令，添加恢复脚本
-RUN sed -i '/^exec \.\/baihu server$/d' /app/docker-entrypoint.sh
+RUN sed -i '/^exec baihu server$/d' /app/docker-entrypoint.sh
 RUN echo "" >> /app/docker-entrypoint.sh
 RUN echo "# 执行恢复脚本" >> /app/docker-entrypoint.sh
 RUN echo "if [ -f /restore.sh ]; then" >> /app/docker-entrypoint.sh
