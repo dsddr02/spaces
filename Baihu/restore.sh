@@ -1,3 +1,4 @@
+
 # 设置Playwright环境 使用chrome
 # python -m pip install playwright
 # python -m playwright install-deps
@@ -45,51 +46,40 @@ RESET_RESPONSE=$(
 )
 
 echo  "======================写入rclone配置========================\n"
-mkdir -p ~/.config/rclone
 echo "$RCLONE_CONF" > ~/.config/rclone/rclone.conf
 
 if [ -n "$RCLONE_CONF" ]; then
   echo "##########同步备份############"
+  # 为了防止不存在备份目录报错直接执行创建命令，如果存在也不会受影响
   rclone mkdir $REMOTE_FOLDER
   
+  # 使用 rclone ls 命令列出文件夹内容，将输出和错误分别捕获
   OUTPUT=$(rclone ls "$REMOTE_FOLDER" 2>&1)
+  # 获取 rclone 命令的退出状态码
   EXIT_CODE=$?
-  
+  #echo "rclone退出代码:$EXIT_CODE"
+  # 判断退出状态码
   if [ $EXIT_CODE -eq 0 ]; then
+    # rclone 命令成功执行，检查文件夹是否为空
     if [ -z "$OUTPUT" ]; then
-      echo "初次安装，没有备份文件"
+      #为空不处理
+      echo "初次安装"
     else
-      echo "发现备份文件，开始恢复..."
-      mkdir -p /app/backup_tmp
+      #echo "文件夹不为空"
+      # rclone sync $REMOTE_FOLDER /app --exclude="/baihu" --exclude "/docker-entrypoint.sh"
+      mkdir /app/backup_tmp
+      # 找最新的文件名
       latest_file=$(rclone lsjson $REMOTE_FOLDER | jq -r 'sort_by(.ModTime) | last | .Path')
-      echo "最新备份文件: $latest_file"
+      # 复制到目标目录
       rclone copy $REMOTE_FOLDER/$latest_file /app/backup_tmp
-      
-      # 解压并更新scripts文件夹（保留原备份文件）
-      echo "开始解压备份文件到临时目录..."
-      cd /app/backup_tmp
-      BACKUP_BASENAME=$(basename "$latest_file" .zip)
-      unzip -o "$latest_file" -d "${BACKUP_BASENAME}_extract"
-      
-      echo "克隆biili仓库到scripts文件夹..."
-      git clone https://github.com/evenluyy/biili.git "${BACKUP_BASENAME}_extract/scripts/biili"
-      
-      echo "重新打包为临时zip文件..."
-      cd "${BACKUP_BASENAME}_extract"
-      zip -r "../${BACKUP_BASENAME}_temp_restore.zip" .
-      cd /app/backup_tmp
-      
-      echo "使用临时修改的备份文件进行恢复..."
-      ./baihu restore "/app/backup_tmp/${BACKUP_BASENAME}_temp_restore.zip"
-      
-      echo "备份恢复完成，重启服务..."
-      pm2 restart baihu
-      
-      # 清理临时文件，保留原备份文件
-      cd /app
+      # RESTORE_RESPON=$(curl -b cookies.txt "http://localhost:8052/api/v1/settings/restore" \
+      #   -F "file=@/app/backup_tmp/$latest_file;type=application/zip" \
+      #   -H "Accept: */*" \
+      #   --compressed
+      # )
+      ./baihu restore /app/backup_tmp/$latest_file
       rm -rf /app/backup_tmp
-      
-      echo "恢复完成！原备份文件已保留，biili仓库已临时添加到scripts文件夹用于恢复"
+      pm2 restart baihu
     fi
   elif [[ "$OUTPUT" == *"directory not found"* ]]; then
     echo "错误：文件夹不存在"
@@ -100,5 +90,4 @@ else
     echo "没有检测到Rclone配置信息"
 fi
 
-echo "容器启动完成，biili 仓库位于 /app/biili"
 tail -f /dev/null
