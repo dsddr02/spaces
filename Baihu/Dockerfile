@@ -16,7 +16,7 @@ RUN apt-get update && apt-get install -y \
 RUN rclone config -h
 
 # 克隆 GitHub 仓库到镜像中
-RUN git clone https://github.com/evenluyy/biili.git /app/biili
+RUN git clone https://github.com/evenluyy/bilio.git /app/bilio
 
 # 复制恢复脚本
 COPY ./restore.sh /
